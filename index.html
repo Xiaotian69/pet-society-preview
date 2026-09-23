@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4f8f5" />
+    <meta
+      name="description"
+      content="宠物社网页体验版：从日常观察开始，记录宠物的每一点变化。AI 尚未接入，问诊结果仅为界面演示。"
+    />
+    <title>宠物社 · 好好照顾，每一个小生命</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%231c6652'/%3E%3Ctext x='6' y='29' font-size='28'%3E✿%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./app.mjs"></script>
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-inner">
+        <a href="#/" class="brand" aria-label="宠物社首页"
+          ><span class="brand-mark">✿</span
+          ><span>宠物社<small>PET SOCIETY</small></span></a
+        >
+        <nav aria-label="主导航">
+          <a href="#/" data-nav="home">首页</a
+          ><a href="#/symptoms" data-nav="symptoms">开始记录</a
+          ><a href="#/history" data-nav="history">历史记录</a>
+        </nav>
+        <a href="#/pet" class="profile-link"
+          ><span class="avatar">♡</span><span>我的宠物</span></a
+        >
+      </div>
+    </header>
+    <main id="app" tabindex="-1"></main>
+    <footer class="footer">
+      <span
+        >✿ 宠物社 <span class="footer-tagline">用心观察，温柔陪伴。</span></span
+      ><span>网页体验版 · AI 尚未接入</span>
+    </footer>
+    <div id="toast" class="toast" role="status" hidden></div>
+    <dialog id="ai-dialog">
+      <button class="close" aria-label="关闭">×</button
+      ><span class="icon-tile">✧</span>
+      <h2>AI 助手，还在准备中</h2>
+      <p>
+        这一版先体验页面和记录流程。AI
+        暂未接入，不会发送你的资料，也不会生成诊断。
+      </p>
+      <p class="muted">你可以先从症状选择开始，看看完整的使用效果。</p>
+      <button class="primary" data-action="demo-from-dialog">
+        体验记录流程 →
+      </button>
+    </dialog>
+    <noscript><p>请启用浏览器 JavaScript 以体验宠物社网页。</p></noscript>
+  </body>
+</html>
