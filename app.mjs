@@ -6,6 +6,10 @@ import {
   saveRecord,
   createStore,
 } from "./model.mjs";
+import {
+  dailyKinds,normalizeDailyPet,createDailyEntry,createCareTask,completeCareTask,
+  readDailyEntries,readCareTasks,todayKey,
+} from "./daily.mjs";
 
 const app = document.querySelector("#app");
 let storage;
@@ -48,6 +52,10 @@ let pet =
         ),
       )
     : {};
+let dailyPet=normalizeDailyPet(store.read("dailyPet",null))||normalizeDailyPet(pet);
+let consultationNeedsRefresh=store.read("consultationNeedsRefresh",false)===true||Boolean(pet.species&&dailyPet&&pet.species!==dailyPet.species);
+let dailyEntries=readDailyEntries(store.read("dailyEntries",[]));
+let careTasks=readCareTasks(store.read("careTasks",[]));
 const historyRead = store.read("history", []);
 let history = Array.isArray(historyRead) ? historyRead.filter(isRecord) : [];
 let draft = store.read("draft", null);
@@ -125,13 +133,47 @@ function symptomCards() {
     .join("");
 }
 function home() {
-  return `<div class="home"><section class="hero"><div class="hero-copy"><div class="eyebrow">为每一个毛孩子，多一点在意</div><h1>它的变化，<br><em>一起慢慢说清楚。</em></h1><p>有些不舒服，藏在日常的小变化里。<br>从你观察到的情况开始，一步步记录，<br>让每一份关心，都更有方向。</p><div class="hero-actions"><a class="primary" href="#/symptoms">开始记录 <span>↗</span></a><button class="outline" data-action="ai">✧ 告诉 AI <span class="muted">· 即将开放</span></button></div><div class="tiny-note"><span>◉</span> 网页体验版 · 可体验完整流程，结果为演示内容</div></div>${illustration}</section><section><div class="section-heading"><h2>今天，它哪里不太对劲？</h2><span>从一个小小的观察开始</span></div><div class="symptom-grid">${symptomCards()}</div></section><section class="home-bottom"><div class="pet-card"><span class="icon-tile">♡</span><div><h3>${pet.name ? `${e(pet.name)}的小档案` : "先认识一下你的小伙伴"}</h3><p>${pet.name ? `${speciesName(pet.species)} · ${e(pet.breed)} · ${e(pet.age)}` : "记下它的基本信息，让每次记录更完整。"}</p></div><a class="text-link" href="#/pet">${pet.name ? "查看资料" : "建立档案"} ↗</a></div><div class="principles"><div><span>⌁</span>先记录观察，再慢慢了解每一点变化</div><div><span>♧</span>资料仅存当前浏览器，你可以随时删除</div><div><span>✧</span>AI 还在准备，先把使用体验做好</div></div></section></div>`;
+  const today=todayKey();
+  const pending=careTasks.filter(task=>!task.doneAt);
+  const tasks=pending.slice(0,3).map(task=>`<div class="care-row"><div><strong>${e(task.title)}</strong><small class="${task.dueDate<=today?'due-now':''}">${task.dueDate<today?'已逾期':task.dueDate===today?'今天到期':`${e(task.dueDate)} 到期`}</small></div><button class="care-check" data-complete-task="${e(task.id)}" aria-label="完成${e(task.title)}">✓</button></div>`).join('');
+  const entries=dailyEntries.slice(0,3).map(row=>`<div class="daily-record-row"><span class="record-mark">${dailyKinds[row.kind].icon}</span><div><strong>${dailyKinds[row.kind].label} · ${e(row.value)}${row.kind==='weight'?' kg':''}</strong><small>${formatDate(row.at)}${row.note?` · ${e(row.note)}`:''}</small></div></div>`).join('');
+  return `<div class="home daily-home">
+    <section class="hero daily-hero"><div class="hero-copy"><div class="eyebrow">每一天的陪伴，都值得被看见</div><h1>${dailyPet?`${e(dailyPet.name)}的每一天，`:'照顾它的每一天，'}<br><em>从今天开始记录。</em></h1><p>喂养、活动和小变化，随手记下；该做的事，打开首页就能看到。</p><div class="hero-actions"><a class="primary" href="#/daily-pet">${dailyPet?'编辑基础档案':'建立基础档案'} <span>↗</span></a><a class="outline" href="#/daily-history">查看全部日常 →</a></div><div class="tiny-note"><span>◉</span> 网页体验版 · 数据只保存在当前浏览器</div></div>${illustration}</section>
+    <div class="daily-duo"><section class="daily-panel"><div class="section-heading"><div><h2>今日照护</h2><span>自己安排要记得的事</span></div><a class="text-link" href="#/daily-task">+ 添加事项</a></div><div class="daily-panel-body">${tasks||`<div class="daily-empty">${dailyPet?'还没有照护事项。可以添加买粮、复诊或其他提醒。':'先建一份基础档案，再安排照护事项。'}</div>`}${pending.length>3?`<a class="text-link" href="#/daily-history">还有 ${pending.length-3} 项 · 查看全部 →</a>`:''}</div></section>
+    <section class="daily-panel"><div class="section-heading"><div><h2>快速记录</h2><span>有变化时记一笔即可</span></div></div><div class="daily-quick-grid">${Object.entries(dailyKinds).map(([kind,info])=>`<button class="daily-quick" data-daily-kind="${kind}"><span>${info.icon}</span><strong>${info.label}</strong><small>${{food:'吃得怎么样',activity:'今天的状态',stool:'观察到的情况',weight:'记录一次称重'}[kind]}</small></button>`).join('')}</div></section></div>
+    <section class="daily-panel recent-panel"><div class="section-heading"><div><h2>最近记录</h2><span>按记录时间排列</span></div><a class="text-link" href="#/daily-history">查看全部日常 →</a></div><div class="daily-panel-body">${entries||'<div class="daily-empty">还没有日常记录。从上面的食欲、活动、排便或体重开始。</div>'}</div></section>
+    <section class="health-panel"><div class="section-heading"><div><span class="eyebrow">需要时再使用</span><h2>发现异常，来这里整理症状</h2><span>这部分仍是观察流程演示，不提供真实诊断。</span></div><button class="outline" data-action="ai">✧ 告诉 AI · 即将开放</button></div><div class="symptom-grid">${symptomCards()}</div><a class="text-link" href="#/history">查看问诊演示历史 →</a></section>
+  </div>`;
+}
+function dailyPetPage(){
+  return `<div class="page daily-form-page">${heading('认识它的日常','只需昵称和犬 / 猫，就能开始日常记录。','',false)}<form id="daily-pet-form" class="card daily-form-card"><div class="fields"><div class="field"><label for="daily-name">宠物昵称</label><input id="daily-name" name="name" value="${e(dailyPet?.name)}" maxlength="20" placeholder="例如：豆包" required></div><div class="field"><label for="daily-species">它是</label><select id="daily-species" name="species" required><option value="">请选择</option><option value="dog" ${dailyPet?.species==='dog'?'selected':''}>狗狗</option><option value="cat" ${dailyPet?.species==='cat'?'selected':''}>猫咪</option></select></div></div><p id="form-error" class="field-error" role="alert"></p><div class="actions"><button class="primary" type="submit">保存基础档案</button><a class="text-link" href="#/">回到首页</a></div><div class="notice">当前只支持一只宠物，原有日常记录会保留。更改犬猫后，下次使用问诊演示需重新填写完整资料；保存前旧资料仍会保留。</div><a class="text-link" href="#/pet">查看或修改问诊演示资料 →</a></form></div>`;
+}
+function dailyRecordPage(){
+  if(!dailyPet) return emptyPage('先认识一下它','建立基础档案后，就可以记下日常变化。','daily-pet','建立基础档案');
+  const requested=new URLSearchParams(location.hash.split('?')[1]||'').get('kind');
+  const kind=Object.hasOwn(dailyKinds,requested)?requested:'food';
+  const info=dailyKinds[kind];
+  const input=kind==='weight'?'<div class="field"><label for="daily-value">体重（kg）</label><input id="daily-value" name="value" type="number" min="0.01" max="500" step="0.01" placeholder="例如：4.2" required></div>':`<fieldset class="daily-options"><legend>今天的情况</legend>${info.options.map(value=>`<label><input type="radio" name="value" value="${e(value)}" required><span>${e(value)}</span></label>`).join('')}</fieldset>`;
+  return `<div class="page daily-form-page">${heading(`记录${info.label}`,'记下你观察到的情况，之后可以在日常历史中回看。','',false)}<form id="daily-record-form" data-kind="${kind}" class="card daily-form-card">${input}<div class="field"><label for="daily-note">备注（可不填）</label><textarea id="daily-note" name="note" maxlength="200" placeholder="想补充的情况"></textarea></div><p id="form-error" class="field-error" role="alert"></p><div class="actions"><button class="primary" type="submit">保存记录</button><a class="text-link" href="#/">暂不记录</a></div></form></div>`;
+}
+function dailyTaskPage(){
+  if(!dailyPet) return emptyPage('先认识一下它','建立基础档案后，就可以安排照护事项。','daily-pet','建立基础档案');
+  return `<div class="page daily-form-page">${heading('添加照护事项','安排要记得的事，打开首页就能看到。','',false)}<form id="daily-task-form" class="card daily-form-card"><div class="fields"><div class="field"><label for="task-title">事项名称</label><input id="task-title" name="title" maxlength="40" placeholder="例如：买粮、复诊" required></div><div class="field"><label for="task-date">日期</label><input id="task-date" name="dueDate" type="date" value="${todayKey()}" required></div></div><p id="form-error" class="field-error" role="alert"></p><div class="actions"><button class="primary" type="submit">保存事项</button><a class="text-link" href="#/">暂不添加</a></div><div class="notice">日期由你填写。此网页不会自动计算医疗日程，也不会发送系统通知。</div></form></div>`;
+}
+function dailyHistoryPage(){
+  const pending=careTasks.filter(task=>!task.doneAt);
+  const completed=careTasks.filter(task=>task.doneAt).sort((a,b)=>b.doneAt.localeCompare(a.doneAt));
+  return `<div class="page daily-history-page">${heading('它的日常','记录和照护事项只保存在当前浏览器。','',false)}<div class="section-heading"><h2>待完成事项</h2><a class="text-link" href="#/daily-task">+ 添加事项</a></div>${pending.length?pending.map(task=>`<article class="history-item"><div><h3>${e(task.title)}</h3><p>计划日期 ${e(task.dueDate)}</p></div><div class="actions"><button class="secondary" data-complete-task="${e(task.id)}" aria-label="完成${e(task.title)}">完成</button><button class="danger" data-delete-task="${e(task.id)}" aria-label="删除${e(task.title)}">删除</button></div></article>`).join(''):'<div class="card daily-empty">目前没有待完成事项。</div>'}
+    <div class="section-heading"><h2>日常记录</h2><span>最近 ${dailyEntries.length} 条 · 最多保留 500 条</span></div>${dailyEntries.length?dailyEntries.map(row=>`<article class="history-item"><div><h3>${dailyKinds[row.kind].label} · ${e(row.value)}${row.kind==='weight'?' kg':''}</h3><p>${formatDate(row.at)}${row.note?` · ${e(row.note)}`:''}</p></div><button class="danger" data-delete-daily="${e(row.id)}" aria-label="删除这条${dailyKinds[row.kind].label}记录">删除</button></article>`).join(''):'<div class="card daily-empty">还没有日常记录。</div>'}
+    <div class="section-heading"><h2>已完成事项</h2></div>${completed.length?completed.map(task=>`<article class="history-item"><div><h3>${e(task.title)} · 已完成</h3><p>计划日期 ${e(task.dueDate)} · ${formatDate(task.doneAt)} 完成</p></div><button class="danger" data-delete-task="${e(task.id)}" aria-label="删除${e(task.title)}">删除</button></article>`).join(''):'<div class="card daily-empty">还没有已完成事项。</div>'}<div class="card"><h3>你的资料，由你管理</h3><p>当前只支持同一只宠物。更换浏览器或设备，记录不会自动同步。</p><button class="danger" data-action="clear-all">删除本机全部资料与记录</button></div></div>`;
 }
 function inputField(key, label, placeholder, required = true) {
-  return `<div class="field"><label for="${key}">${label}${required ? ' <span class="muted">*</span>' : ""}</label><input id="${key}" name="${key}" value="${e(pet[key])}" placeholder="${placeholder}" maxlength="100" ${required ? "required" : ""}>${key === "weight" ? "<small>填写 kg 数值，或明确填写“不清楚”</small>" : ""}</div>`;
+  const source=consultationNeedsRefresh?dailyPet:pet;
+  return `<div class="field"><label for="${key}">${label}${required ? ' <span class="muted">*</span>' : ""}</label><input id="${key}" name="${key}" value="${e(source?.[key])}" placeholder="${placeholder}" maxlength="100" ${required ? "required" : ""}>${key === "weight" ? "<small>填写 kg 数值，或明确填写“不清楚”</small>" : ""}</div>`;
 }
 function selectField(key, label, items, required = true) {
-  return `<div class="field"><label for="${key}">${label}${required ? ' <span class="muted">*</span>' : ""}</label><select id="${key}" name="${key}" ${required ? "required" : ""}><option value="">请选择</option>${items.map(([value, text]) => `<option value="${value}" ${pet[key] === value ? "selected" : ""}>${text}</option>`).join("")}</select></div>`;
+  const source=consultationNeedsRefresh?dailyPet:pet;
+  return `<div class="field"><label for="${key}">${label}${required ? ' <span class="muted">*</span>' : ""}</label><select id="${key}" name="${key}" ${required ? "required" : ""}><option value="">请选择</option>${items.map(([value, text]) => `<option value="${value}" ${source?.[key] === value ? "selected" : ""}>${text}</option>`).join("")}</select></div>`;
 }
 function petPage() {
   const next = new URLSearchParams(location.hash.split("?")[1] || "").get(
@@ -162,14 +204,14 @@ function petPage() {
         ["unknown", "不清楚"],
       ],
       false,
-    )}${inputField("housing", "生活环境", "例如：室内饲养", false)}</div></div><div class="card"><h2>02 <span class="muted">/</span> 日常照护 <span class="badge">选填</span></h2><div class="fields">${inputField("vaccination", "疫苗记录", "例如：接种时间，或不清楚", false)}${inputField("deworming", "驱虫记录", "例如：最近一次驱虫时间", false)}${inputField("origin", "它从哪里来", "例如：领养、自家出生", false)}<div class="field full"><label for="notes">想补充的事情</label><textarea id="notes" name="notes" maxlength="500" placeholder="记下一些它的小习惯…">${e(pet.notes)}</textarea></div></div><p id="form-error" class="field-error" role="alert"></p><div class="actions"><button class="primary" type="submit">${next ? "保存资料，继续 →" : "保存小档案 →"}</button><a class="text-link" href="#/">暂时返回首页</a></div></div></form>`,
+    )}${inputField("housing", "生活环境", "例如：室内饲养", false)}</div></div><div class="card"><h2>02 <span class="muted">/</span> 日常照护 <span class="badge">选填</span></h2><div class="fields">${inputField("vaccination", "疫苗记录", "例如：接种时间，或不清楚", false)}${inputField("deworming", "驱虫记录", "例如：最近一次驱虫时间", false)}${inputField("origin", "它从哪里来", "例如：领养、自家出生", false)}<div class="field full"><label for="notes">想补充的事情</label><textarea id="notes" name="notes" maxlength="500" placeholder="记下一些它的小习惯…">${e(consultationNeedsRefresh?'':pet.notes)}</textarea></div></div><p id="form-error" class="field-error" role="alert"></p><div class="actions"><button class="primary" type="submit">${next ? "保存资料，继续 →" : "保存小档案 →"}</button><a class="text-link" href="#/">暂时返回首页</a></div></div></form>`,
   )}</div>`;
 }
 function symptomsPage() {
   return `<div class="page">${heading("你看到了什么？", "选择最接近的描述，我们一起把这次观察整理下来。")}${shell(`<div class="card"><div class="section-caption">${pet.name ? `${e(pet.name)} · ${speciesName(pet.species)}` : "还没有宠物档案 · 选择后先填写资料"} / 选择本次主要症状</div><div class="symptom-grid">${symptomCards()}</div><div class="notice">这三个入口都用于演示观察记录流程。此版本不运行书籍诊断，也不会根据回答判断疾病。</div></div><div class="card"><h3>想直接描述它的情况？</h3><p>自然语言对话会在接入 AI 后开放。</p><button class="secondary" data-action="ai">✧ 了解 AI 助手</button></div>`)}</div>`;
 }
 function consultationPage() {
-  if (!draft || validatePet(pet).length)
+  if (!draft || consultationNeedsRefresh || pet.species!==dailyPet?.species || validatePet(pet).length)
     return emptyPage(
       "先选择一个观察入口",
       "填好宠物资料并选择症状后，就可以体验三轮观察记录。",
@@ -224,6 +266,10 @@ function render() {
   const route = location.hash.replace(/^#\/?/, "").split("?")[0];
   const pages = {
     "": home,
+    "daily-pet": dailyPetPage,
+    "daily-record": dailyRecordPage,
+    "daily-task": dailyTaskPage,
+    "daily-history": dailyHistoryPage,
     pet: petPage,
     symptoms: symptomsPage,
     consultation: consultationPage,
@@ -259,7 +305,7 @@ function render() {
       "afterbegin",
       '<div class="notice storage-warning">浏览器暂时无法保存资料，本次记录只在当前页面会话中保留。</div>',
     );
-  document.title = `${{ "": "首页", pet: "宠物档案", symptoms: "选择症状", consultation: "观察记录", result: "观察摘要", disease: "疾病详情", treatment: "治疗详情", history: "历史记录" }[route] || "页面未找到"} · 宠物社体验版`;
+  document.title = `${{ "": "首页", "daily-pet":"基础档案", "daily-record":"日常记录", "daily-task":"照护事项", "daily-history":"它的日常", pet: "宠物档案", symptoms: "选择症状", consultation: "观察记录", result: "观察摘要", disease: "疾病详情", treatment: "治疗详情", history: "历史记录" }[route] || "页面未找到"} · 宠物社体验版`;
 }
 function persistDraft() {
   store.write("draft", draft);
@@ -267,7 +313,7 @@ function persistDraft() {
 function start(symptomId) {
   draft = { symptomId, answers: questions.map(() => null), step: 0 };
   persistDraft();
-  if (validatePet(pet).length) go("pet?next=symptoms");
+  if (consultationNeedsRefresh || pet.species!==dailyPet?.species || validatePet(pet).length) go("pet?next=symptoms");
   else go("consultation");
 }
 function openAI() {
@@ -276,6 +322,22 @@ function openAI() {
 document.addEventListener("click", (event) => {
   const button = event.target.closest("button");
   if (!button) return;
+  if(button.dataset.dailyKind){
+    go(dailyPet?`daily-record?kind=${button.dataset.dailyKind}`:'daily-pet');
+    return;
+  }
+  if(button.dataset.completeTask){
+    try{careTasks=completeCareTask(careTasks,button.dataset.completeTask);store.write('careTasks',careTasks);render();toast('事项已完成');}catch(error){toast(error.message);}
+    return;
+  }
+  if(button.dataset.deleteDaily){
+    if(confirm('删除这条日常记录？')){dailyEntries=dailyEntries.filter(row=>row.id!==button.dataset.deleteDaily);store.write('dailyEntries',dailyEntries);render();toast('记录已删除');}
+    return;
+  }
+  if(button.dataset.deleteTask){
+    if(confirm('删除这条照护事项？')){careTasks=careTasks.filter(task=>task.id!==button.dataset.deleteTask);store.write('careTasks',careTasks);render();toast('事项已删除');}
+    return;
+  }
   if (button.dataset.symptom) {
     start(button.dataset.symptom);
     return;
@@ -355,13 +417,21 @@ document.addEventListener("click", (event) => {
       }
       break;
     case "clear-all":
-      if (confirm("删除当前浏览器里的宠物资料、草稿和全部演示记录？")) {
+      if (confirm("删除当前浏览器里的宠物资料、日常记录、照护事项和全部演示记录？")) {
         pet = {};
+        dailyPet=null;
+        dailyEntries=[];
+        careTasks=[];
+        consultationNeedsRefresh=false;
         history = [];
         draft = null;
         current = null;
         for (const [key, value] of Object.entries({
           pet,
+          dailyPet,
+          dailyEntries,
+          careTasks,
+          consultationNeedsRefresh,
           history,
           draft,
           current,
@@ -374,12 +444,39 @@ document.addEventListener("click", (event) => {
   }
 });
 document.addEventListener("submit", (event) => {
-  if (event.target.id !== "pet-form") return;
+  if(!['pet-form','daily-pet-form','daily-record-form','daily-task-form'].includes(event.target.id)) return;
   event.preventDefault();
   const form = event.target;
   const values = Object.fromEntries(
     [...new FormData(form)].map(([k, v]) => [k, String(v).trim()]),
   );
+  if(form.id==='daily-pet-form'){
+    const next=normalizeDailyPet(values);
+    if(!next){form.querySelector('#form-error').textContent='请填写 1～20 字的昵称，并选择犬或猫。';return;}
+    if(pet.species&&pet.species!==next.species){
+      consultationNeedsRefresh=true;
+      draft=null;
+      persistDraft();
+    }else{
+      pet={...pet,name:next.name,species:next.species};
+      consultationNeedsRefresh=false;
+    }
+    dailyPet=next;
+    store.write('dailyPet',dailyPet);
+    store.write('pet',pet);
+    store.write('consultationNeedsRefresh',consultationNeedsRefresh);
+    go('');toast('基础档案已保存');return;
+  }
+  if(form.id==='daily-record-form'){
+    try{dailyEntries=createDailyEntry({kind:form.dataset.kind,value:values.value||'',note:values.note||''},dailyEntries);store.write('dailyEntries',dailyEntries);go('');toast('日常记录已保存');}
+    catch(error){form.querySelector('#form-error').textContent=error.message;}
+    return;
+  }
+  if(form.id==='daily-task-form'){
+    try{careTasks=createCareTask(values,careTasks);store.write('careTasks',careTasks);go('');toast('照护事项已添加');}
+    catch(error){form.querySelector('#form-error').textContent=error.message;}
+    return;
+  }
   const invalid = validatePet(values);
   if (invalid.length) {
     document.querySelector("#form-error").textContent =
@@ -389,6 +486,10 @@ document.addEventListener("submit", (event) => {
   }
   pet = values;
   store.write("pet", pet);
+  consultationNeedsRefresh=false;
+  store.write('consultationNeedsRefresh',false);
+  dailyPet=normalizeDailyPet(pet);
+  store.write('dailyPet',dailyPet);
   go(form.dataset.next ? (draft ? "consultation" : "symptoms") : "");
   toast(
     store.persistent ? "小档案已保存" : "已保存到当前会话；浏览器无法持久保存",

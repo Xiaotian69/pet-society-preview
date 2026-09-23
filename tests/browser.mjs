@@ -63,11 +63,37 @@ try {
     });
     page.on("dialog", (d) => d.accept());
     await page.goto(base);
-    await page.getByRole("heading", { name: /它的变化/ }).waitFor();
+    await page.getByRole("heading", { name: /照顾它的每一天/ }).waitFor();
     await page.screenshot({
       path: path.join(root, `qa/home-${viewport.width}.png`),
       fullPage: true,
     });
+    await page.getByRole("link", { name: /建立基础档案/ }).click();
+    await page.getByLabel("宠物昵称").fill("豆豆");
+    await page.getByLabel("它是").selectOption("dog");
+    await page.getByRole("button", { name: "保存基础档案" }).click();
+    await page.getByRole("heading", { name: /豆豆的每一天/ }).waitFor();
+    await page.getByRole("button", { name: /食欲/ }).click();
+    await page.getByLabel("正常").check();
+    await page.getByRole("button", { name: "保存记录" }).click();
+    await page.getByRole("link", { name: /添加事项/ }).click();
+    await page.getByLabel("事项名称").fill("买粮");
+    await page.getByRole("button", { name: "保存事项" }).click();
+    await page.locator("#toast").waitFor({ state: "hidden" });
+    await page.screenshot({
+      path: path.join(root, `qa/home-filled-${viewport.width}.png`),
+      fullPage: true,
+    });
+    await page.getByRole("link", { name: /查看全部日常/ }).first().click();
+    await page.getByText("食欲 · 正常").waitFor();
+    await page.getByRole("button", { name: "完成买粮" }).click();
+    await page.reload();
+    await page.getByText("买粮 · 已完成").waitFor();
+    await page.getByRole("button", { name: "删除这条食欲记录" }).click();
+    assert.equal(await page.getByText("食欲 · 正常").count(), 0);
+    await page.getByRole("button", { name: "删除买粮" }).click();
+    assert.equal(await page.getByText("买粮 · 已完成").count(), 0);
+    await page.goto(base);
     await page.getByRole("button", { name: /告诉 AI/ }).click();
     await page.getByRole("heading", { name: "AI 助手，还在准备中" }).waitFor();
     await page.getByRole("button", { name: "关闭", exact: true }).click();
@@ -111,7 +137,7 @@ try {
       .getByRole("heading", { name: "治疗详情", exact: true })
       .waitFor();
     await page.getByRole("link", { name: "返回观察摘要" }).click();
-    await page.getByRole("link", { name: "历史记录", exact: true }).click();
+    await page.getByRole("link", { name: "问诊历史", exact: true }).click();
     await page.locator('.history-item').waitFor();
     assert.equal(await page.locator(".history-item").count(), 1);
     await page.getByRole("link", { name: "查看摘要" }).click();
@@ -119,6 +145,10 @@ try {
     await page.getByRole("heading", { name: "豆豆的观察摘要" }).waitFor();
     for (const route of [
       "",
+      "daily-pet",
+      "daily-record",
+      "daily-task",
+      "daily-history",
       "pet",
       "symptoms",
       "consultation",
@@ -138,9 +168,20 @@ try {
         `No horizontal overflow at ${viewport.width}, ${route}`,
       );
     }
+    await page.goto(base + "#/daily-pet");
+    await page.getByLabel("它是").selectOption("cat");
+    await page.getByRole("button", { name: "保存基础档案" }).click();
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("pet-society-demo-v1:pet")).species), "dog");
+    await page.goto(base + "#/daily-pet");
+    await page.getByRole("link", { name: /修改问诊演示资料/ }).click();
+    assert.equal(await page.getByLabel("品种").inputValue(), "");
+    assert.equal(await page.getByLabel("它是").inputValue(), "cat");
+    await page.goto(base + "#/history");
     await page.getByRole("button", { name: "删除豆豆的记录" }).click();
     assert.equal(await page.locator(".history-item").count(), 0);
     await page.getByRole("button", { name: "删除本机演示资料与记录" }).click();
+    await page.goto(base + "#/daily-pet");
+    assert.equal(await page.getByLabel("宠物昵称").inputValue(), "");
     await page.goto(base + "#/pet");
     assert.equal(await page.getByLabel("宠物昵称").inputValue(), "");
     await page.evaluate(() => {
@@ -165,7 +206,7 @@ try {
     await page.goto(base);
     await page.reload();
     await page
-      .getByRole("heading", { name: /它的变化/ })
+      .getByRole("heading", { name: /照顾它的每一天/ })
       .waitFor({ timeout: 3000 });
     for (const route of ["__proto__", "toString"]) {
       await page.goto(base + "#/" + route);
@@ -203,7 +244,7 @@ try {
       .waitFor({ timeout: 3000 });
     await context.close();
     console.log(
-      `PASS: ${viewport.width}px, 8 routes, full flow, refresh, history, deletion, corrupted storage`,
+      `PASS: ${viewport.width}px, 12 routes, full flow, refresh, history, deletion, corrupted storage`,
     );
   }
   const blocked = await browser.newContext({

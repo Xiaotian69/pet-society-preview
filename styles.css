@@ -1129,3 +1129,73 @@ dialog .primary {
     line-height: 1.8;
   }
 }
+
+/* 日常首页与记录表单 */
+.daily-home{padding-top:30px}
+.daily-hero{min-height:310px;padding:24px 30px 26px;border:1px solid #dce9da;border-radius:24px;background:linear-gradient(125deg,#eff6e9 0%,#f9fbf5 58%,#fff 100%);margin-bottom:25px;overflow:hidden}
+.daily-hero h1{font-size:40px;margin-bottom:12px}
+.daily-hero p{margin-bottom:20px}
+.daily-hero .illustration{max-width:390px}
+.daily-hero .float-label{display:none}
+.daily-hero .eyebrow{margin-bottom:14px}
+.daily-hero .tiny-note{margin-top:14px}
+.daily-duo{display:grid;grid-template-columns:1fr 1.05fr;gap:20px;align-items:stretch}
+.daily-panel{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 25px;margin-bottom:20px;min-width:0}
+.daily-panel .section-heading{margin:0 0 16px;align-items:end}
+.daily-panel .section-heading h2{font-size:22px}
+.daily-panel .section-heading span{display:block;margin-top:3px}
+.daily-panel-body{display:grid;gap:0}
+.daily-empty{padding:18px;background:#f7faf6;border-radius:12px;color:var(--muted);font-size:13px;line-height:1.8}
+.care-row,.daily-record-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid #edf1ea}
+.care-row:last-child,.daily-record-row:last-child{border-bottom:0}
+.care-row strong,.daily-record-row strong{display:block;font-size:14px;font-weight:600}
+.care-row small,.daily-record-row small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.care-row .due-now{color:#b36b3e}
+.care-check{flex:none;width:36px;height:36px;border-radius:50%;background:#e7f1e7;color:var(--green);font-size:18px}
+.care-check:hover{background:#d6e9d9}
+.daily-quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.daily-quick{display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-height:104px;padding:13px 17px;background:#f7faf6;border:1px solid #e3ebe1;border-radius:13px;color:var(--ink);transition:background .2s,transform .2s}
+.daily-quick:hover{background:#edf5eb;transform:translateY(-2px)}
+.daily-quick span{font-size:22px;line-height:1.2}
+.daily-quick strong{font-size:14px;margin-top:5px}
+.daily-quick small{color:var(--muted);font-size:11px;margin-top:2px}
+.recent-panel{margin-bottom:24px}
+.record-mark{flex:none;width:36px;height:36px;display:grid;place-items:center;background:#eef5ea;border-radius:11px;font-size:18px}
+.daily-record-row{justify-content:flex-start}
+.health-panel{padding:24px 26px 26px;border:1px solid #e5e8d9;border-radius:18px;background:#f9faf2}
+.health-panel .section-heading{margin:0 0 18px;align-items:center}
+.health-panel .section-heading h2{margin-bottom:4px}
+.health-panel .section-heading .eyebrow{display:block;margin:0 0 5px;font-size:10px}
+.health-panel .text-link{display:inline-block;margin-top:20px}
+.daily-form-page{max-width:740px}
+.daily-form-card{max-width:740px}
+.daily-form-card .field{margin-bottom:18px}
+.daily-form-card .field-error{min-height:20px}
+.daily-options{border:0;padding:0;margin:0 0 20px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.daily-options legend{font-size:13px;font-weight:600;margin-bottom:12px}
+.daily-options label{position:relative;cursor:pointer}
+.daily-options input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.daily-options span{display:block;background:#f7faf6;border:1px solid #dfe9de;border-radius:10px;padding:14px 17px;text-align:center;font-size:14px}
+.daily-options input:checked + span{background:#e4f2e6;border-color:#85ae89;color:var(--green);font-weight:600}
+.daily-options input:focus-visible + span{outline:3px solid #af8234;outline-offset:3px}
+.daily-history-page{max-width:900px}
+.daily-history-page .section-heading{margin-top:32px}
+.daily-history-page .history-item{margin-bottom:10px}
+@media (max-width:760px){
+  .daily-home{padding-top:18px}
+  .daily-hero{display:block;min-height:0;padding:23px 20px;margin-bottom:18px;border-radius:17px}
+  .daily-hero h1{font-size:29px;line-height:1.45}
+  .daily-hero p{font-size:12px;line-height:1.8}
+  .daily-hero .illustration{display:none}
+  .daily-hero .hero-actions{flex-wrap:wrap}
+  .daily-hero .hero-actions a{flex:1;min-width:128px;font-size:12px;padding:10px 11px}
+  .daily-duo{grid-template-columns:1fr;gap:0}
+  .daily-panel,.health-panel{padding:18px;border-radius:14px;margin-bottom:14px}
+  .daily-panel .section-heading{display:flex;margin-bottom:13px}
+  .daily-panel .section-heading h2,.health-panel .section-heading h2{font-size:20px}
+  .daily-quick{min-height:92px;padding:11px 13px}
+  .recent-panel .section-heading{display:flex}
+  .health-panel .section-heading{display:block}
+  .health-panel .section-heading .outline{margin-top:12px}
+  .daily-options{gap:10px}
+}
