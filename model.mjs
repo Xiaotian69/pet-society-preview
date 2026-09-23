@@ -36,6 +36,8 @@ export const questions = [
   },
 ];
 export function validatePet(pet = {}) {
+  if (!pet || typeof pet !== "object" || Array.isArray(pet))
+    return ["name", "species", "breed", "age", "sex", "weight"];
   const invalid = ["name", "breed", "age", "weight"].filter(
     (key) =>
       typeof pet[key] !== "string" || !pet[key].trim() || pet[key].length > 100,
@@ -43,6 +45,7 @@ export function validatePet(pet = {}) {
   if (!["dog", "cat"].includes(pet.species)) invalid.push("species");
   if (!["male", "female", "unknown"].includes(pet.sex)) invalid.push("sex");
   if (
+    typeof pet.weight === "string" &&
     pet.weight &&
     pet.weight !== "不清楚" &&
     (!Number.isFinite(Number(pet.weight)) || Number(pet.weight) <= 0)

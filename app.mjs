@@ -26,7 +26,27 @@ const e = (value) =>
 const petRead = store.read("pet", {});
 let pet =
   petRead && typeof petRead === "object" && !Array.isArray(petRead)
-    ? petRead
+    ? Object.fromEntries(
+        Object.entries(petRead).filter(
+          ([key, value]) =>
+            [
+              "name",
+              "species",
+              "breed",
+              "age",
+              "sex",
+              "weight",
+              "neutered",
+              "housing",
+              "vaccination",
+              "deworming",
+              "origin",
+              "notes",
+            ].includes(key) &&
+            typeof value === "string" &&
+            value.length <= (key === "notes" ? 500 : 100),
+        ),
+      )
     : {};
 const historyRead = store.read("history", []);
 let history = Array.isArray(historyRead) ? historyRead.filter(isRecord) : [];
@@ -64,7 +84,8 @@ function validDraft(d) {
     d.answers.every((a, i) => a === null || questions[i].options.includes(a)) &&
     Number.isInteger(d.step) &&
     d.step >= 0 &&
-    d.step < questions.length
+    d.step < questions.length &&
+    d.answers.slice(0, d.step).every((a) => a !== null)
   );
 }
 const speciesName = (value) => (value === "cat" ? "猫咪" : "狗狗");
@@ -212,7 +233,7 @@ function render() {
     history: historyPage,
   };
   app.innerHTML = (
-    pages[route] ||
+    (Object.hasOwn(pages, route) ? pages[route] : null) ||
     (() => emptyPage("这一页走丢了", "回到首页，重新开始吧。", "", "回到首页"))
   )();
   document.querySelectorAll("[data-nav]").forEach((a) => {

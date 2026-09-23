@@ -16,6 +16,10 @@ const pet = {
   sex: "unknown",
   weight: "不清楚",
 };
+test("malformed field types are rejected without coercion", () => {
+  assert.ok(validatePet({ ...pet, weight: { toString: null } }).length);
+  assert.ok(validatePet(null).length);
+});
 test("profile requires explicit answers and a valid species", () => {
   assert.ok(validatePet({}).length);
   assert.deepEqual(validatePet(pet), []);

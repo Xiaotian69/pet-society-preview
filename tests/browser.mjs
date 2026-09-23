@@ -112,6 +112,7 @@ try {
       .waitFor();
     await page.getByRole("link", { name: "返回观察摘要" }).click();
     await page.getByRole("link", { name: "历史记录", exact: true }).click();
+    await page.locator('.history-item').waitFor();
     assert.equal(await page.locator(".history-item").count(), 1);
     await page.getByRole("link", { name: "查看摘要" }).click();
     await page.reload();
@@ -155,6 +156,51 @@ try {
     });
     await page.reload();
     await page.getByRole("heading", { name: "认识一下它" }).waitFor();
+    await page.evaluate(() =>
+      localStorage.setItem(
+        "pet-society-demo-v1:pet",
+        JSON.stringify({ name: { toString: null } }),
+      ),
+    );
+    await page.goto(base);
+    await page.reload();
+    await page
+      .getByRole("heading", { name: /它的变化/ })
+      .waitFor({ timeout: 3000 });
+    for (const route of ["__proto__", "toString"]) {
+      await page.goto(base + "#/" + route);
+      await page
+        .locator("h1")
+        .filter({ hasText: "这一页走丢了" })
+        .waitFor({ timeout: 3000 });
+    }
+    await page.evaluate(() => {
+      localStorage.setItem(
+        "pet-society-demo-v1:pet",
+        JSON.stringify({
+          name: "豆豆",
+          species: "dog",
+          breed: "不清楚",
+          age: "2岁",
+          sex: "unknown",
+          weight: "不清楚",
+        }),
+      );
+      localStorage.setItem(
+        "pet-society-demo-v1:draft",
+        JSON.stringify({
+          symptomId: "vomiting",
+          answers: [null, null, "不清楚"],
+          step: 2,
+        }),
+      );
+    });
+    await page.goto(base + "#/consultation");
+    await page.reload();
+    await page
+      .locator("h1")
+      .filter({ hasText: "先选择一个观察入口" })
+      .waitFor({ timeout: 3000 });
     await context.close();
     console.log(
       `PASS: ${viewport.width}px, 8 routes, full flow, refresh, history, deletion, corrupted storage`,
